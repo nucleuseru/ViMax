@@ -171,13 +171,17 @@ class Idea2VideoPipeline:
         os.makedirs(character_dir, exist_ok=True)
 
         front_portrait_path = os.path.join(character_dir, "front.png")
+        side_portrait_path = os.path.join(character_dir, "side.png")
+        back_portrait_path = os.path.join(character_dir, "back.png")
+
         if os.path.exists(front_portrait_path):
             pass
         else:
             front_portrait_output = await self.character_portraits_generator.generate_front_portrait(character, style)
             front_portrait_output.save(front_portrait_path)
+            front_portrait_output.save(side_portrait_path)
+            front_portrait_output.save(back_portrait_path)
 
-        side_portrait_path = os.path.join(character_dir, "side.png")
         if os.path.exists(side_portrait_path):
             pass
         else:
@@ -193,7 +197,6 @@ class Idea2VideoPipeline:
                 print(f"⚠️ Side portrait generation failed for {character.identifier_in_scene} after retries ({e}); reusing front portrait as fallback.")
                 shutil.copy(front_portrait_path, side_portrait_path)
 
-        back_portrait_path = os.path.join(character_dir, "back.png")
         if os.path.exists(back_portrait_path):
             pass
         else:
@@ -245,9 +248,7 @@ class Idea2VideoPipeline:
 
         scene_scripts = await self.write_script_based_on_story(story=story, user_requirement=user_requirement, quiet=quiet)
 
-        all_video_paths = []
-
-        for idx, scene_script in enumerate(scene_scripts):
+        async def run_pipeline(script: str, idx: int):
             scene_working_dir = os.path.join(self.working_dir, f"scene_{idx}")
             os.makedirs(scene_working_dir, exist_ok=True)
             script2video_pipeline = Script2VideoPipeline(
@@ -258,7 +259,7 @@ class Idea2VideoPipeline:
                 num_image_candidates=self.num_image_candidates,
             )
             final_video_path = await script2video_pipeline(
-                script=scene_script,
+                script=script,
                 user_requirement=user_requirement,
                 style=style,
                 characters=characters,
@@ -266,7 +267,10 @@ class Idea2VideoPipeline:
                 quiet=quiet,
                 progress=_scoped_progress(progress, scene_idx=idx),
             )
-            all_video_paths.append(final_video_path)
+            return final_video_path
+
+        tasks = [run_pipeline(script, idx) for idx, script in enumerate(scene_scripts)]
+        all_video_paths = await asyncio.gather(*tasks)
 
         final_video_path = os.path.join(self.working_dir, "final_video.mp4")
         if os.path.exists(final_video_path):

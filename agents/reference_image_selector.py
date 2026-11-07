@@ -157,7 +157,7 @@ class ReferenceImageSelector:
         filtered_image_path_and_text_pairs = available_image_path_and_text_pairs
 
         # 1. filter images using text-only model
-        if len(available_image_path_and_text_pairs) >= 8:
+        if True:
             human_content = []
             for idx, (_, text) in enumerate(available_image_path_and_text_pairs):
                 human_content.append({
@@ -181,6 +181,11 @@ class ReferenceImageSelector:
                 ref = await chain.ainvoke(messages)
                 filtered_image_path_and_text_pairs = select_pairs_by_indices(available_image_path_and_text_pairs, ref.ref_image_indices)
                 logging.info(f"Filtered image idx:{ref.ref_image_indices}")
+                return {
+                    "reference_image_path_and_text_pairs": filtered_image_path_and_text_pairs,
+                    "text_prompt": ref.text_prompt,
+                }
+
                 
             except Exception as e:
                 logging.error(f"Error get image prompt: \n{e}")

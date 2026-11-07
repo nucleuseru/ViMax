@@ -454,17 +454,17 @@ class Script2VideoPipeline:
         priority_tasks = []
         normal_tasks = []
 
-        if shot_descriptions[first_shot_idx].variation_type in ["medium", "large"]:
-            task = self.generate_frame_for_single_shot(
-                shot_idx=first_shot_idx, 
-                frame_type="last_frame", 
-                first_shot_ff_path_and_text_pair=(first_shot_ff_path, shot_descriptions[first_shot_idx].ff_desc),
-                frame_desc=shot_descriptions[first_shot_idx].lf_desc,
-                visible_characters=[characters[idx] for idx in shot_descriptions[first_shot_idx].lf_vis_char_idxs],
-                character_portraits_registry=character_portraits_registry,
-                progress=progress,
-            )
-            normal_tasks.append(task)
+        # if shot_descriptions[first_shot_idx].variation_type in ["medium", "large"]:
+        #     task = self.generate_frame_for_single_shot(
+        #         shot_idx=first_shot_idx, 
+        #         frame_type="last_frame", 
+        #         first_shot_ff_path_and_text_pair=(first_shot_ff_path, shot_descriptions[first_shot_idx].ff_desc),
+        #         frame_desc=shot_descriptions[first_shot_idx].lf_desc,
+        #         visible_characters=[characters[idx] for idx in shot_descriptions[first_shot_idx].lf_vis_char_idxs],
+        #         character_portraits_registry=character_portraits_registry,
+        #         progress=progress,
+        #     )
+        #     normal_tasks.append(task)
 
         for shot_idx in camera.active_shot_idxs[1:]:
             first_frame_task = self.generate_frame_for_single_shot(
@@ -482,17 +482,17 @@ class Script2VideoPipeline:
                 normal_tasks.append(first_frame_task)
 
 
-            if shot_descriptions[shot_idx].variation_type in ["medium", "large"]:
-                last_frame_task = self.generate_frame_for_single_shot(
-                    shot_idx=shot_idx, 
-                    frame_type="last_frame", 
-                    first_shot_ff_path_and_text_pair=(first_shot_ff_path, shot_descriptions[first_shot_idx].ff_desc),
-                    frame_desc=shot_descriptions[shot_idx].lf_desc,
-                    visible_characters=[characters[idx] for idx in shot_descriptions[shot_idx].lf_vis_char_idxs],
-                    character_portraits_registry=character_portraits_registry,
-                    progress=progress,
-                )
-                normal_tasks.append(last_frame_task)
+            # if shot_descriptions[shot_idx].variation_type in ["medium", "large"]:
+            #     last_frame_task = self.generate_frame_for_single_shot(
+            #         shot_idx=shot_idx, 
+            #         frame_type="last_frame", 
+            #         first_shot_ff_path_and_text_pair=(first_shot_ff_path, shot_descriptions[first_shot_idx].ff_desc),
+            #         frame_desc=shot_descriptions[shot_idx].lf_desc,
+            #         visible_characters=[characters[idx] for idx in shot_descriptions[shot_idx].lf_vis_char_idxs],
+            #         character_portraits_registry=character_portraits_registry,
+            #         progress=progress,
+            #     )
+            #     normal_tasks.append(last_frame_task)
 
 
         await asyncio.gather(*priority_tasks)
@@ -828,16 +828,20 @@ class Script2VideoPipeline:
         _emit_render_progress(progress, "character_portrait_start", f"Generating portraits for {character.identifier_in_scene}", {"character_idx": character.idx, "identifier": character.identifier_in_scene})
 
         front_portrait_path = os.path.join(character_dir, "front.png")
+        side_portrait_path = os.path.join(character_dir, "side.png")
+        back_portrait_path = os.path.join(character_dir, "back.png")
+
         if os.path.exists(front_portrait_path):
             pass
         else:
             _emit_render_progress(progress, "character_portrait_front_start", f"Generating front portrait for {character.identifier_in_scene}", {"character_idx": character.idx, "identifier": character.identifier_in_scene})
             front_portrait_output = await self.character_portraits_generator.generate_front_portrait(character, style)
             front_portrait_output.save(front_portrait_path)
+            front_portrait_output.save(side_portrait_path)
+            front_portrait_output.save(back_portrait_path)
             _emit_render_progress(progress, "character_portrait_front_done", f"Generated front portrait for {character.identifier_in_scene}", {"character_idx": character.idx, "identifier": character.identifier_in_scene, "path": front_portrait_path})
 
 
-        side_portrait_path = os.path.join(character_dir, "side.png")
         if os.path.exists(side_portrait_path):
             pass
         else:
@@ -846,7 +850,6 @@ class Script2VideoPipeline:
             side_portrait_output.save(side_portrait_path)
             _emit_render_progress(progress, "character_portrait_side_done", f"Generated side portrait for {character.identifier_in_scene}", {"character_idx": character.idx, "identifier": character.identifier_in_scene, "path": side_portrait_path})
 
-        back_portrait_path = os.path.join(character_dir, "back.png")
         if os.path.exists(back_portrait_path):
             pass
         else:
